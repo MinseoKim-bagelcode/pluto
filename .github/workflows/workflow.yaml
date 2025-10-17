@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  checking deprecated kube api:
+  check_deprecated_k8_api:
     runs-on: ubuntu-latest
 
     steps:
