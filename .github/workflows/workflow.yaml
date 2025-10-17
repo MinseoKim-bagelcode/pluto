@@ -1,3 +1,12 @@
+name: Pluto
+
+on:
+  push:
+    paths:
+      - "**/*.yml"
+      - "**/*.yaml"
+  workflow_dispatch:
+
 jobs:
   scan:
     runs-on: ubuntu-latest
