@@ -1,6 +1,15 @@
-- name: Download Pluto
-  uses: FairwindsOps/pluto/github-action@master
+jobs:
+  scan:
+    runs-on: ubuntu-latest
 
-- name: Scanning for deprecated kubernetes API
-  run: |
-    pluto detect-files -d pluto/kubernetes/ngnix-ingress-publice.yaml
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Pluto
+        uses: FairwindsOps/pluto/github-action@master
+
+      # pluto/kubernetes 디렉토리 전체를 검사 (권장)
+      - name: Scanning for deprecated Kubernetes API
+        run: |
+          pluto detect-files -d pluto/kubernetes -owide
