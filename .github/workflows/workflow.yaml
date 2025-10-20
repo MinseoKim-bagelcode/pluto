@@ -53,7 +53,6 @@ jobs:
       - name: Comment on PR (create-or-update)
         uses: peter-evans/create-or-update-comment@v4
         with:
-          issue-number: ${{ github.event.number }}
           body: |
             ## 🔎 Pluto Scan Result
             (아래는 요약 표입니다. 전체는 artifact 참조)
@@ -61,7 +60,6 @@ jobs:
       - name: Append markdown table
         uses: peter-evans/create-or-update-comment@v4
         with:
-          issue-number: ${{ github.event.number }}
           body-path: reports/pluto.md
           edit-mode: append
 
