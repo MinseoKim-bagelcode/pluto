@@ -1,4 +1,4 @@
-# Deployment - deprecated example (extensions/v1beta1) +
+# Deployment - deprecated example (extensions/v1beta1) + 1
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
