@@ -47,11 +47,10 @@ jobs:
 
       - name: Comment on PR with Pluto results (always)
         if: always()
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: peter-evans/create-or-update-comment@v4
         with:
-          recreate: true
-          header: pluto-scan
-          message: |
+          issue-number: 1
+          body: |
             ## 🔎 Pluto Scan Result
             **Exit code:** `${{ env.PLUTO_EXIT }}`  
             (0 = 정상 / 2 = Deprecated 발견 / 3~4 = Removed 발견)
