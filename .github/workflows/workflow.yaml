@@ -51,14 +51,14 @@ jobs:
           path: reports/
 
       - name: Comment on PR (create-or-update)
-        uses: peter-evans/create-or-update-comment@v4
+        uses: KeisukeYamashita/create-comment@v1
         with:
-          body: |
+          comment: |
             ## 🔎 Pluto Scan Result
             (아래는 요약 표입니다. 전체는 artifact 참조)
           edit-mode: replace
       - name: Append markdown table
-        uses: peter-evans/create-or-update-comment@v4
+        uses: KeisukeYamashita/create-comment@v1
         with:
           body-path: reports/pluto.md
           edit-mode: append
