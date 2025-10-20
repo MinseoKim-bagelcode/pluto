@@ -18,7 +18,52 @@ jobs:
       - name: Install Pluto
         uses: FairwindsOps/pluto/github-action@master
 
-      # pluto/kubernetes 디렉토리 전체를 검사 (권장)
-      - name: Scanning for deprecated Kubernetes API
+      - name: Run Pluto and generate reports
+        id: run-pluto
+        continue-on-error: true
+        shell: bash
         run: |
-          pluto detect-files -d pluto/kubernetes -owide
+          set +e
+          mkdir -p reports
+          set -o pipefail
+
+          echo "🔍 Running Pluto scan..."
+          pluto detect-files -d pluto/kubernetes -o wide | tee reports/pluto.txt
+          EXITCODE=$?
+
+          # Markdown 포맷으로 PR 코멘트용 결과 생성
+          pluto detect-files -d pluto/kubernetes -o markdown > reports/pluto.md
+
+          echo "PLUTO_EXIT=$EXITCODE" >> $GITHUB_ENV
+
+          echo "✅ Pluto finished with exit code: $EXITCODE"
+
+      - name: Upload Pluto reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pluto-report
+          path: reports/
+
+      - name: Comment on PR with Pluto results (always)
+        if: always()
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          recreate: true
+          header: pluto-scan
+          message: |
+            ## 🔎 Pluto Scan Result
+            **Exit code:** `${{ env.PLUTO_EXIT }}`  
+            (0 = 정상 / 2 = Deprecated 발견 / 3~4 = Removed 발견)
+
+            ### 결과 요약
+            > 아래 표는 Pluto가 감지한 Deprecated 및 Removed 리소스 목록입니다.  
+            > (전체 결과는 워크플로 아티팩트에서 `pluto-report` 파일로 확인 가능)
+
+            $(cat reports/pluto.md)
+
+      # ❗ 선택: Removed 발견 시만 실패 처리하고 싶다면 아래 유지
+      #    항상 성공시키고 싶으면 이 스텝을 제거하면 됩니다.
+      - name: Fail if removed found
+        if: env.PLUTO_EXIT == '3' || env.PLUTO_EXIT == '4'
+        run: exit 1
