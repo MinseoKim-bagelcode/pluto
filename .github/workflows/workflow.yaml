@@ -7,6 +7,11 @@ on:
       - "**/*.yaml"
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   check_deprecated_k8_api:
     runs-on: ubuntu-latest
@@ -45,21 +50,20 @@ jobs:
           name: pluto-report
           path: reports/
 
-      - name: Comment on PR with Pluto results (always)
-        if: always()
+      - name: Comment on PR (create-or-update)
         uses: peter-evans/create-or-update-comment@v4
         with:
-          issue-number: 1
+          issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## 🔎 Pluto Scan Result
-            **Exit code:** `${{ env.PLUTO_EXIT }}`  
-            (0 = 정상 / 2 = Deprecated 발견 / 3~4 = Removed 발견)
-
-            ### 결과 요약
-            > 아래 표는 Pluto가 감지한 Deprecated 및 Removed 리소스 목록입니다.  
-            > (전체 결과는 워크플로 아티팩트에서 `pluto-report` 파일로 확인 가능)
-
-            $(cat reports/pluto.md)
+            (아래는 요약 표입니다. 전체는 artifact 참조)
+          edit-mode: replace
+      - name: Append markdown table
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: reports/pluto.md
+          edit-mode: append
 
       # ❗ 선택: Removed 발견 시만 실패 처리하고 싶다면 아래 유지
       #    항상 성공시키고 싶으면 이 스텝을 제거하면 됩니다.
