@@ -1,0 +1,70 @@
+name: Pluto
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]  # PR 생성/수정/다시 열림 시
+    paths:
+      - "**/*.yml"
+      - "**/*.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  check_deprecated_k8_api:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Pluto
+        uses: FairwindsOps/pluto/github-action@master
+
+      - name: Run Pluto and generate reports
+        id: run-pluto
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          mkdir -p reports
+          set -o pipefail
+
+          echo "🔍 Running Pluto scan..."
+          pluto detect-files -d pluto/kubernetes -o wide | tee reports/pluto.txt
+          EXITCODE=$?
+
+          # Markdown 포맷으로 PR 코멘트용 결과 생성
+          pluto detect-files -d pluto/kubernetes -o markdown > reports/pluto.md
+
+          echo "PLUTO_EXIT=$EXITCODE" >> $GITHUB_ENV
+
+          echo "✅ Pluto finished with exit code: $EXITCODE"
+
+      - name: Upload Pluto reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pluto-report
+          path: reports/
+
+      - name: Comment PR
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            ## 🔎 Pluto Scan Result
+            (아래는 요약 표입니다. 전체는 artifact 참조)
+      #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Append markdown table
+      #   uses: thollander/actions-comment-pull-request@v1
+      #   with:
+      #     body_path: reports/pluto.md
+
+      # ❗ 선택: Removed 발견 시만 실패 처리하고 싶다면 아래 유지
+      #    항상 성공시키고 싶으면 이 스텝을 제거하면 됩니다.
+      - name: Fail if removed found
+        if: env.PLUTO_EXIT == '3' || env.PLUTO_EXIT == '4'
+        run: exit 1
