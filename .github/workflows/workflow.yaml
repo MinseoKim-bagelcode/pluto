@@ -33,7 +33,7 @@ jobs:
         uses: helmfile/helmfile-action@v2.0.5
         with:
           helmfile-version: 'v0.160.0'
-          helm-version: 'v3.18.10'
+          helm-version: 'v3.19.0'
           helmfile-args: template --environment dev
 
       - name: Save stdout to file
