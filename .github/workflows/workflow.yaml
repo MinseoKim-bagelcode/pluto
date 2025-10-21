@@ -103,7 +103,7 @@ jobs:
             + (
                 $items
                 | map(
-                    "### " + (icon) + " " + (status) + " — " + (safe(.kind)) + " `" + (safe(.name)) + "`\n"
+                    "### " + (icon) + " " + (status) + " — " + (safe(.api["kind"])) + " `" + (safe(.name)) + "`\n"
                     + "<details><summary>Details</summary>\n\n"
                     + "```yaml\n"
                     + "Chart: "          + (.name // "-")      + "\n"
