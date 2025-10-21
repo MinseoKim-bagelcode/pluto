@@ -97,7 +97,7 @@ jobs:
 
             ( .items // . ) as $items
             |
-            "# 🔎 Pluto Scan Result\n"
+            "## 🔎 Pluto Scan Result\n"
             + "**Total:** \($items|length)  ·  **Removed:** \($items|map(select(.removed==true))|length)  ·  **Deprecated:** \($items|map(select(.deprecated==true))|length)\n"
             + "\n---\n"
             + (
