@@ -1,4 +1,4 @@
-name: Pluto
+name: Pluto - check 
 
 on:
   pull_request:
@@ -51,16 +51,14 @@ jobs:
           name: pluto-report
           path: reports/
 
-      - name: Comment PR
+      - name: Comment PR with Pluto results
         uses: thollander/actions-comment-pull-request@v3
         with:
           message: |
             ## 🔎 Pluto Scan Result
             (아래는 요약 표입니다. 전체는 artifact 참조)
-      - name: Append markdown table
-        uses: thollander/actions-comment-pull-request@v3
-        with:
           file-path: reports/pluto.md
+          comment_tag: pluto-scan 
 
       # ❗ 선택: Removed 발견 시만 실패 처리하고 싶다면 아래 유지
       #    항상 성공시키고 싶으면 이 스텝을 제거하면 됩니다.
