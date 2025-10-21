@@ -21,13 +21,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Helm
-        shell: bash
-        run: |
-          curl -L https://github.com/helmfile/helmfile/releases/latest/download/helmfile_linux_amd64 -o helmfile
-          chmod +x helmfile
-          sudo mv helmfile /usr/local/bin/
-
       # - name: Prepare (deps + lint)
       #   shell: bash
       #   run: |
@@ -35,14 +28,14 @@ jobs:
       #     helm dependency build charts/my-app
       #     helm lint charts/my-app -f values.yaml
 
-      - name: Render Helmfile Manifests (to file)
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p rendered reports
-          helmfile -e dev template
-            > rendered/manifests.yaml
-          echo "✅ rendered/manifests.yaml 생성 완료"
+      - name: Helmfile 실행
+        uses: helmfile/helmfile-action@v2.0.5
+        with:
+          helmfile-version: 'latest'     # Helmfile 버전 지정 (예: v0.162.0)
+          helm-version: 'latest'         # Helm 버전 지정
+          helmfile-args: template \
+                         --environment dev \
+                         > rendered/manifests.yaml
 
       - name: Upload Rendered Manifests
         if: always()
