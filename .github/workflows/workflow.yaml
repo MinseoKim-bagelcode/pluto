@@ -1,7 +1,8 @@
 name: Pluto
 
 on:
-  push:
+  pull_request:
+    types: [opened, synchronize, reopened]  # PR 생성/수정/다시 열림 시
     paths:
       - "**/*.yml"
       - "**/*.yaml"
