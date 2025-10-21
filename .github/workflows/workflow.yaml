@@ -24,11 +24,9 @@ jobs:
       - name: Install Helm
         shell: bash
         run: |
-          HELMFILE_VERSION=0.155.0
-          curl -sSL -o /usr/local/bin/helmfile \
-            https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_Linux_x86_64
-          chmod +x /usr/local/bin/helmfile
-          helmfile --version
+          curl -L https://github.com/helmfile/helmfile/releases/latest/download/helmfile_linux_amd64 -o helmfile
+          chmod +x helmfile
+          sudo mv helmfile /usr/local/bin/
 
       # - name: Prepare (deps + lint)
       #   shell: bash
