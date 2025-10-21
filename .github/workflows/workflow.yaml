@@ -21,6 +21,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.4'
+
+      # - name: Prepare (deps + lint)
+      #   shell: bash
+      #   run: |
+      #     set -euo pipefail
+      #     helm dependency build charts/my-app
+      #     helm lint charts/my-app -f values.yaml
+
+      - name: Render Helm Manifests (to file)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p rendered reports
+          helmfile -e dev template
+            > rendered/manifests.yaml
+          echo "✅ rendered/manifests.yaml 생성 완료"
+
+      - name: Upload Rendered Manifests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-rendered-manifests
+          path: rendered/manifests.yaml
+
       - name: Install Pluto
         uses: FairwindsOps/pluto/github-action@master
 
@@ -64,7 +92,7 @@ jobs:
         run: |
           mkdir -p reports
           set +e
-          pluto detect-files -d pluto/kubernetes --target-versions k8s=v1.29 -o json > reports/pluto.json
+          pluto detect --target-versions k8s=v1.29 -o json < rendered/manifests.yaml > reports/pluto.json
           jq '(.items // .) | .[0]' -C reports/pluto.json
           EXIT=$?
           echo "PLUTO_EXIT=$EXIT" >> $GITHUB_ENV
@@ -82,7 +110,6 @@ jobs:
           fi
 
           # 결과를 라인 포맷으로 변환
-          # Pluto JSON은 보통 .items[] 또는 최상위 배열 형태를 가짐 → 둘 다 대응
           jq -r '
             def status:
               if   (.removed    // false) then "Removed"

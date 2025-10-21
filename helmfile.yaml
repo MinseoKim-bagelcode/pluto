@@ -1,0 +1,18 @@
+repositories:
+- name: superset
+  url: https://apache.github.io/superset
+
+environments:
+  dev:
+    kubeContext: data-core-eks-dev
+  staging:
+    kubeContext: data-core-eks-prod
+  prod:
+    kubeContext: data-core-eks-prod
+releases:
+  - name: superset-{{ .Environment.Name }}
+    namespace: superset
+    chart: superset/superset
+    version: 0.13.4
+    values:
+      - k8s/superset/values.{{ .Environment.Name }}.yaml.gotmpl
