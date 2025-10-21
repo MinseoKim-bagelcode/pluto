@@ -63,7 +63,10 @@ jobs:
       - name: Run Pluto and export JSON
         run: |
           mkdir -p reports
+          set +e
           pluto detect-files -d pluto/kubernetes --target-versions k8s=v1.29 -o json > reports/pluto.json
+          EXIT=$?
+          echo "PLUTO_EXIT=$EXIT" >> $GITHUB_ENV
 
       - name: Build line-style comment (no table)
         shell: bash
