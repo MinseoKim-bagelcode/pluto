@@ -32,8 +32,8 @@ jobs:
         id: render
         uses: helmfile/helmfile-action@v2.0.5
         with:
-          helmfile-version: 'v1.1.7'
-          helm-version: 'v3.19.0'
+          helmfile-version: 'v0.160.0'
+          helm-version: 'v3.13.3'
           helmfile-args: template --environment dev
 
       - name: Save stdout to file
