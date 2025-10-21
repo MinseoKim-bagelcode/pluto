@@ -57,6 +57,7 @@ jobs:
           message: |
             ## 🔎 Pluto Scan Result
             ---
+            
           file-path: reports/pluto.md
           comment_tag: pluto-scan 
 
