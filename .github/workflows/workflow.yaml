@@ -99,7 +99,7 @@ jobs:
               + "Kind : \"" + (.kind // "unknown") + "\"\n"
               + "Deprecated API : \"" + (.version // "unknown") + "\"\n"
               + "Replacement : \"" + (.replacement // "none") + "\"\n"
-              + "Status : \"" + (if .removed then "Removed" else if .deprecated then "Deprecated" else "OK" end) + "\"\n"
+              + "Status : \"" + (if .removed then "Removed" elif .deprecated then "Deprecated" else "OK" end) + "\"\n"
               + "\n"
           ' reports/pluto.json | sed '1i ## 🔎 Pluto Scan Result\n' > reports/comment.md
 
