@@ -28,14 +28,22 @@ jobs:
       #     helm dependency build charts/my-app
       #     helm lint charts/my-app -f values.yaml
 
-      - name: Helmfile 실행
+      - name: Render to stdout
+        id: render
         uses: helmfile/helmfile-action@v2.0.5
         with:
-          helmfile-version: 'latest'     # Helmfile 버전 지정 (예: v0.162.0)
-          helm-version: 'latest'         # Helm 버전 지정
-          helmfile-args: template \
-                         --environment dev \
-                         > rendered/manifests.yaml
+          helmfile-version: 'v1.1.7'
+          helm-version: 'v3.19.0'
+          helmfile-args: template --environment dev
+
+      - name: Save stdout to file
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p rendered
+          # 위 액션은 stdout을 콘솔로만 내보내므로, 필요하면 다시 실행해 파일로 받거나,
+          # 별도 bash 스텝에서 helmfile을 호출하세요.
+          helmfile template --environment dev > rendered/manifests.yaml
 
       - name: Upload Rendered Manifests
         if: always()
