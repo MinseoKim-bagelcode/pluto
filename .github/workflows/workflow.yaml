@@ -57,9 +57,8 @@ jobs:
           message: |
             ## 🔎 Pluto Scan Result
             ---
-            
+
           file-path: reports/pluto.md
-          comment_tag: pluto-scan 
 
       # ❗ 선택: Removed 발견 시만 실패 처리하고 싶다면 아래 유지
       #    항상 성공시키고 싶으면 이 스텝을 제거하면 됩니다.
