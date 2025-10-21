@@ -95,7 +95,7 @@ jobs:
         run: |
           mkdir -p reports
           set +e
-          pluto detect --target-versions k8s=v1.29 -o json < rendered/manifests.yaml > reports/pluto.json
+          pluto detect rendered/manifests.yaml --target-versions k8s=v1.29 -o json > reports/pluto.json
           jq '(.items // .) | .[0]' -C reports/pluto.json
           EXIT=$?
           echo "PLUTO_EXIT=$EXIT" >> $GITHUB_ENV
