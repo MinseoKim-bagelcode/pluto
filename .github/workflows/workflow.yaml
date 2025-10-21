@@ -24,41 +24,89 @@ jobs:
       - name: Install Pluto
         uses: FairwindsOps/pluto/github-action@master
 
-      - name: Run Pluto and generate reports
-        id: run-pluto
-        continue-on-error: true
+      # - name: Run Pluto and generate reports
+      #   id: run-pluto
+      #   continue-on-error: true
+      #   shell: bash
+      #   run: |
+      #     set +e
+      #     mkdir -p reports
+      #     set -o pipefail
+
+      #     echo "🔍 Running Pluto scan..."
+      #     pluto detect-files -d pluto/kubernetes -o wide | tee reports/pluto.txt
+      #     EXITCODE=$?
+
+      #     # Markdown 포맷으로 PR 코멘트용 결과 생성
+      #     pluto detect-files -d pluto/kubernetes -o markdown > reports/pluto.md
+
+      #     echo "PLUTO_EXIT=$EXITCODE" >> $GITHUB_ENV
+
+      #     echo "✅ Pluto finished with exit code: $EXITCODE"
+
+      # - name: Upload Pluto reports
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: pluto-report
+      #     path: reports/
+
+      # - name: Comment PR with Pluto results
+      #   uses: thollander/actions-comment-pull-request@v3
+      #   with:
+      #     message: |
+      #       ## 🔎 Pluto Scan Result
+      #       ---
+
+      #     file-path: reports/pluto.md
+
+      - name: Run Pluto and export JSON
+        run: |
+          mkdir -p reports
+          pluto detect-files -d pluto/kubernetes --target-versions k8s=v1.29 -o json > reports/pluto.json
+
+      - name: Build line-style comment (no table)
         shell: bash
         run: |
-          set +e
-          mkdir -p reports
-          set -o pipefail
+          # findings가 없으면 메시지 출력
+          if [ "$(jq '. | length' reports/pluto.json)" = "0" ] || [ "$(jq '.items? // . | length' reports/pluto.json)" = "0" ]; then
+            {
+              echo "## 🔎 Pluto Scan Result"
+              echo "Deprecated/Removed API 사용이 발견되지 않았습니다."
+            } > reports/comment.md
+            exit 0
+          fi
 
-          echo "🔍 Running Pluto scan..."
-          pluto detect-files -d pluto/kubernetes -o wide | tee reports/pluto.txt
-          EXITCODE=$?
+          # 결과를 라인 포맷으로 변환
+          # Pluto JSON은 보통 .items[] 또는 최상위 배열 형태를 가짐 → 둘 다 대응
+          jq -r '
+            ( .items // . ) 
+            | map({
+                name: (.name // "<UNKNOWN>"),
+                namespace: (.namespace // "<UNKNOWN>"),
+                kind: .kind,
+                version: .version,
+                replacement: (.replacement // ""),
+                deprecated: (.deprecated // false),
+                removed: (.removed // false)
+              })
+            | .[] 
+            | "Chart : \"" + (.name // "unknown") + "\"\n"
+              + "Namespace : \"" + (.namespace // "unknown") + "\"\n"
+              + "Kind : \"" + (.kind // "unknown") + "\"\n"
+              + "Deprecated API : \"" + (.version // "unknown") + "\"\n"
+              + "Replacement : \"" + (.replacement // "none") + "\"\n"
+              + "Status : \"" + (if .removed then "Removed" else if .deprecated then "Deprecated" else "OK" end) + "\"\n"
+              + "\n"
+          ' reports/pluto.json | sed '1i ## 🔎 Pluto Scan Result\n' > reports/comment.md
 
-          # Markdown 포맷으로 PR 코멘트용 결과 생성
-          pluto detect-files -d pluto/kubernetes -o markdown > reports/pluto.md
-
-          echo "PLUTO_EXIT=$EXITCODE" >> $GITHUB_ENV
-
-          echo "✅ Pluto finished with exit code: $EXITCODE"
-
-      - name: Upload Pluto reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pluto-report
-          path: reports/
-
-      - name: Comment PR with Pluto results
+      - name: Comment PR (single message)
+        if: github.event_name == 'pull_request'
         uses: thollander/actions-comment-pull-request@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          message: |
-            ## 🔎 Pluto Scan Result
-            ---
-
-          file-path: reports/pluto.md
+          file-path: reports/comment.md
 
       # ❗ 선택: Removed 발견 시만 실패 처리하고 싶다면 아래 유지
       #    항상 성공시키고 싶으면 이 스텝을 제거하면 됩니다.
