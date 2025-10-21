@@ -24,7 +24,6 @@ jobs:
       - name: Install Helm
         shell: bash
         run: |
-          curl -sSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
           HELMFILE_VERSION=0.155.0
           curl -sSL -o /usr/local/bin/helmfile \
             https://github.com/helmfile/helmfile/releases/download/v${HELMFILE_VERSION}/helmfile_Linux_x86_64
