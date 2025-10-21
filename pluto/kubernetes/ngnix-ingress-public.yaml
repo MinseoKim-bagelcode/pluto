@@ -107,7 +107,7 @@ controller:
   electionID: ingress-controller-leader
 
   ## This section refers to the creation of the IngressClass resource
-  ## IngressClass resources are supported since k8s >= 1.18 and required since k8s >= 1.19
+  ## IngressClass resources are supported since k8s >= 1.18 and required since k8s >= 1.199
   ingressClassResource:
     # -- Name of the ingressClass
     name: nginx
