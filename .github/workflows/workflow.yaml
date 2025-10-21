@@ -83,25 +83,40 @@ jobs:
           # 결과를 라인 포맷으로 변환
           # Pluto JSON은 보통 .items[] 또는 최상위 배열 형태를 가짐 → 둘 다 대응
           jq -r '
-            ( .items // . ) 
-            | map({
-                name: (.name // "<UNKNOWN>"),
-                namespace: (.namespace // "<UNKNOWN>"),
-                kind: .kind,
-                version: .version,
-                replacement: (.replacement // ""),
-                deprecated: (.deprecated // false),
-                removed: (.removed // false)
-              })
-            | .[] 
-            | "Chart : \"" + (.name // "unknown") + "\"\n"
-              + "Namespace : \"" + (.namespace // "unknown") + "\"\n"
-              + "Kind : \"" + (.kind // "unknown") + "\"\n"
-              + "Deprecated API : \"" + (.version // "unknown") + "\"\n"
-              + "Replacement : \"" + (.replacement // "none") + "\"\n"
-              + "Status : \"" + (if .removed then "Removed" elif .deprecated then "Deprecated" else "OK" end) + "\"\n"
-              + "\n"
-          ' reports/pluto.json | sed '1i ## 🔎 Pluto Scan Result\n' > reports/comment.md
+            def status:
+              if   (.removed    // false) then "Removed"
+              elif (.deprecated // false) then "Deprecated"
+              else "OK" end;
+            def icon:
+              if   (.removed    // false) then "🚫"
+              elif (.deprecated // false) then "⚠️"
+              else "✅" end;
+            def safe($s):
+              if ($s == null or $s == "") then "-" else $s end;
+
+            ( .items // . ) as $items
+            |
+            "# 🔎 Pluto Scan Result\n"
+            + "**Total:** \($items|length)  ·  **Removed:** \($items|map(select(.removed==true))|length)  ·  **Deprecated:** \($items|map(select(.deprecated==true))|length)\n"
+            + "\n---\n"
+            + (
+                $items
+                | map(
+                    "### " + (icon) + " " + (status) + " — " + (safe(.kind)) + " `" + (safe(.name)) + "`\n"
+                    + "<details><summary>Details</summary>\n\n"
+                    + "```yaml\n"
+                    + "Chart: "          + (.name // "-")      + "\n"
+                    + "Namespace: "      + (safe(.namespace))            + "\n"
+                    + "Kind: "           + (safe(.kind))                 + "\n"
+                    + "Deprecated API: " + (safe(.version))              + "\n"
+                    + "Replacement: "    + (safe(.replacement // "none"))+ "\n"
+                    + "Status: "         + (status)                      + "\n"
+                    + "```\n\n"
+                    + "</details>\n"
+                  )
+                | join("\n---\n")
+              )
+          ' reports/pluto.json > reports/comment.md
 
       - name: Comment PR (single message)
         if: github.event_name == 'pull_request'
