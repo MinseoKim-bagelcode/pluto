@@ -56,7 +56,7 @@ jobs:
         with:
           message: |
             ## 🔎 Pluto Scan Result
-            (아래는 요약 표입니다. 전체는 artifact 참조)
+            ---
           file-path: reports/pluto.md
           comment_tag: pluto-scan 
 
