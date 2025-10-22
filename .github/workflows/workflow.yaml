@@ -1,8 +1,8 @@
-name: Pluto - check 
+name: Pluto - check k8s API
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]  # PR 생성/수정/다시 열림 시
+    types: [opened, reopened]  # PR 생성/다시 열림 시
     paths:
       - "**/*.yml"
       - "**/*.yaml"
@@ -113,8 +113,6 @@ jobs:
         with:
           file-path: reports/comment.md
 
-      # ❗ 선택: Removed 발견 시만 실패 처리하고 싶다면 아래 유지
-      #    항상 성공시키고 싶으면 이 스텝을 제거하면 됩니다.
       - name: Fail if removed found
         if: env.PLUTO_EXIT == '3' || env.PLUTO_EXIT == '4'
         run: exit 1
