@@ -1,0 +1,12 @@
+# Please don't remove this value setting
+# Context: allow file permission to backup and restore superset operation data in postgresql
+postgresql:
+  volumePermissions:
+    enabled: true
+
+# Please don't remove this value setting
+# Context: provide postgresql password to upgrade redis
+global:
+  postgresql:
+    auth:
+      postgresPassword: ${{ requiredEnv "POSTGRESPASSWORD" }}

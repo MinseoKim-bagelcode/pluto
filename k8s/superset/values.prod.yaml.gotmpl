@@ -1,0 +1,114 @@
+postgresql:
+  enabled: true
+  auth:
+    # admin user password, and `superset` user password
+    postgresPassword: {{ requiredEnv "POSTGRESPASSWORD" }}
+    password: {{ requiredEnv "POSTGRESPASSWORD" }}
+  image:
+    # DO NOT CHANGE postgres image without careful consideration
+    tag: "14.6.0-debian-11-r13"
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+      accessModes:
+        - ReadWriteOnce
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: topology.kubernetes.io/zone
+              operator: In
+              values:
+              - us-west-2b
+
+redis:
+  enabled: true
+
+ingress:
+  enabled: true
+  ingressClassName: nginx-vpn
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: superset.bagel-data.com
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+  hosts:
+    - superset.bagel-data.com
+
+# Superset UI
+supersetNode:
+  replicas:
+    enabled: true
+    replicaCount: 1
+  autoscaling:
+    enabled: false
+  connections:
+    db_pass: {{ requiredEnv "POSTGRESPASSWORD" }}
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 8192Mi
+    requests:
+      cpu: 400m
+      memory: 1024Mi
+
+# Superset Query Worker (Celery)
+supersetWorker:
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 4096Mi
+    requests:
+      cpu: 400m
+      memory: 2048Mi
+
+configOverrides:
+  extend_timeout: |
+    # Extend timeout to allow long running queries.
+    SUPERSET_WEBSERVER_TIMEOUT = 300
+    SQLLAB_ASYNC_TIME_LIMIT_SEC = 600
+  enable_oauth: |
+    # This will make sure the redirect_uri is properly computed, even with SSL offloading
+    ENABLE_PROXY_FIX = True
+
+    from flask_appbuilder.security.manager import (AUTH_DB, AUTH_OAUTH)
+    AUTH_TYPE = AUTH_OAUTH
+
+    OAUTH_PROVIDERS = [
+        {
+            "name": "google",
+            "whitelist": [ os.getenv("OAUTH_WHITELIST_REGEX", "") ],
+            "icon": "fa-google",
+            "token_key": "access_token",
+            "remote_app": {
+                "client_id": "858678678289-88grl5du32d93uaim1918b8ub1ngo4ma.apps.googleusercontent.com",
+                "client_secret": "{{ requiredEnv "CLIENT_SECRET" }}",
+                "api_base_url": "https://www.googleapis.com/oauth2/v2/",
+                "client_kwargs": {"scope": "email profile"},
+                "request_token_url": None,
+                "access_token_url": "https://accounts.google.com/o/oauth2/token",
+                "authorize_url": "https://accounts.google.com/o/oauth2/auth",
+            }
+        }
+    ]
+    # Map Authlib roles to superset roles
+    AUTH_ROLE_ADMIN = 'Admin'
+    AUTH_ROLE_GENERAL = 'Alpha'
+    # Will allow user self registration, allowing to create Flask users from Authorized User
+    AUTH_USER_REGISTRATION = True
+    # The default user self registration role
+    AUTH_USER_REGISTRATION_ROLE = AUTH_ROLE_GENERAL
+  secret: |
+    SECRET_KEY = '{{ requiredEnv "SECRET_KEY" }}'
+
+bootstrapScript: |
+  #!/bin/bash
+  pip install psycopg2-binary==2.9.10
+  pip install apache-superset[databricks]==4.1.1
+  pip install authlib==1.3.2
+  pip install pyhive==0.7.0
+  if [ ! -f ~/bootstrap ]; then echo "Running Superset with uid {{`{{ .Values.runAsUser }}`}}" > ~/bootstrap; fi
+
+extraSecretEnv:
+  SUPERSET_SECRET_KEY: '{{ requiredEnv "SECRET_KEY" }}'

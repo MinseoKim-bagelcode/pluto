@@ -1,4 +1,4 @@
-name: Pluto
+name: Pluto - check 
 
 on:
   pull_request:
@@ -21,47 +21,97 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Pluto
-        uses: FairwindsOps/pluto/github-action@master
+      - name: Render to stdout
+        id: render
+        uses: helmfile/helmfile-action@v2.0.5
+        with:
+          helmfile-version: 'v0.160.0'
+          helm-version: 'v3.19.0'
+          helmfile-args: template --environment dev
 
-      - name: Run Pluto and generate reports
-        id: run-pluto
-        continue-on-error: true
+      - name: Save stdout to file
         shell: bash
         run: |
-          set +e
-          mkdir -p reports
-          set -o pipefail
+          set -euo pipefail
+          mkdir -p rendered
+          # 위 액션은 stdout을 콘솔로만 내보내므로, 필요하면 다시 실행해 파일로 받거나,
+          # 별도 bash 스텝에서 helmfile을 호출하세요.
+          helmfile template --environment dev > rendered/manifests.yaml
 
-          echo "🔍 Running Pluto scan..."
-          pluto detect-files -d pluto/kubernetes -o wide | tee reports/pluto.txt
-          EXITCODE=$?
-
-          # Markdown 포맷으로 PR 코멘트용 결과 생성
-          pluto detect-files -d pluto/kubernetes -o markdown > reports/pluto.md
-
-          echo "PLUTO_EXIT=$EXITCODE" >> $GITHUB_ENV
-
-          echo "✅ Pluto finished with exit code: $EXITCODE"
-
-      - name: Upload Pluto reports
+      - name: Upload Rendered Manifests
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pluto-report
-          path: reports/
+          name: helm-rendered-manifests
+          path: rendered/manifests.yaml
 
-      - name: Comment PR
-        uses: thollander/actions-comment-pull-request@v2
+      - name: Install Pluto
+        uses: FairwindsOps/pluto/github-action@master
+
+      - name: Run Pluto and export JSON
+        run: |
+          mkdir -p reports
+          set +e
+          pluto detect rendered/manifests.yaml --target-versions k8s=v1.29 -o json > reports/pluto.json
+          EXIT=$?
+          echo "PLUTO_EXIT=$EXIT" >> $GITHUB_ENV
+
+      - name: Build line-style comment (no table)
+        shell: bash
+        run: |
+          # findings가 없으면 메시지 출력
+          if [ "$(jq '. | length' reports/pluto.json)" = "0" ] || [ "$(jq '.items? // . | length' reports/pluto.json)" = "0" ]; then
+            {
+              echo "## 🔎 Pluto Scan Result"
+              echo "Deprecated/Removed API 사용이 발견되지 않았습니다."
+            } > reports/comment.md
+            exit 0
+          fi
+
+          # 결과를 라인 포맷으로 변환
+          jq -r '
+            def status:
+              if   (.removed    // false) then "Removed"
+              elif (.deprecated // false) then "Deprecated"
+              else "OK" end;
+            def icon:
+              if   (.removed    // false) then "🚫"
+              elif (.deprecated // false) then "⚠️"
+              else "✅" end;
+            def safe($s):
+              if ($s == null or $s == "") then "-" else $s end;
+
+            ( .items // . ) as $items
+            |
+            "## 🔎 Pluto Scan Result\n"
+            + "**Total:** \($items|length)  ·  **Removed:** \($items|map(select(.removed==true))|length)  ·  **Deprecated:** \($items|map(select(.deprecated==true))|length)\n"
+            + "\n---\n"
+            + (
+                $items
+                | map(
+                    "### " + (icon) + " " + (status) + " — " + (safe(.api["kind"])) + " `" + (safe(.name)) + "`\n"
+                    + "<details><summary>Details</summary>\n\n"
+                    + "```yaml\n"
+                    + "Chart: "          + (.name // "-")      + "\n"
+                    + "FilePath: "      + (safe(.filePath))            + "\n"
+                    + "Kind: "           + (safe(.api["kind"]))                 + "\n"
+                    + "Deprecated API: " + (safe(.api["version"]))              + "\n"
+                    + "Replacement: "    + (safe(.api["replacement-api"] // "none"))+ "\n"
+                    + "Status: "         + (status)                      + "\n"
+                    + "```\n\n"
+                    + "</details>\n"
+                  )
+                | join("\n---\n")
+              )
+          ' reports/pluto.json > reports/comment.md
+
+      - name: Comment PR (single message)
+        if: github.event_name == 'pull_request' && env.PLUTO_EXIT != '0'
+        uses: thollander/actions-comment-pull-request@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          message: |
-            ## 🔎 Pluto Scan Result
-            (아래는 요약 표입니다. 전체는 artifact 참조)
-      #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # - name: Append markdown table
-      #   uses: thollander/actions-comment-pull-request@v1
-      #   with:
-      #     body_path: reports/pluto.md
+          file-path: reports/comment.md
 
       # ❗ 선택: Removed 발견 시만 실패 처리하고 싶다면 아래 유지
       #    항상 성공시키고 싶으면 이 스텝을 제거하면 됩니다.
