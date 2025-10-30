@@ -9,5 +9,5 @@ releases:
     chart: ./k8ss/data-portal-frontend
     version: 0.1.0
     values:
-      - k8s/data-portal-frontend/values-{{ .Environment.Name }}.yaml
-      - k8s/data-portal-frontend/values.yaml.gotmpl
+      - k8ss/data-portal-frontend/values-{{ .Environment.Name }}.yaml
+      - k8ss/data-portal-frontend/values.yaml.gotmpl
