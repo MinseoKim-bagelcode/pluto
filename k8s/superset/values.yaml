@@ -774,7 +774,7 @@ init:
       echo "Importing database connections.... "
       superset import_datasources -p {{ .Values.extraConfigMountPath }}/import_datasources.yaml
     fi
-  # -- Launch additional containers into init job pod
+  # -- Launch additional containers into init job podd
   extraContainers: []
   ## Annotations to be added to init job pods
   podAnnotations: {}
