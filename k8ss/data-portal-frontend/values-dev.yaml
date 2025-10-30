@@ -1,0 +1,81 @@
+# Default values for"data-portal-frontend.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: 280144880143.dkr.ecr.us-west-2.amazonaws.com/data-portal-frontend-dev
+  tag: latest # determined from values.yaml.gotmpl
+  pullPolicy: Always
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::280144880143:role/DataPortalDevS3Role
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+# fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+# runAsUser: 1000
+
+secrets: {}
+
+service:
+  name: data-portal-frontend
+  type: ClusterIP
+  port: 3000
+
+labels:
+  bagelcode.custom.label.resource.id: "data-portal-frontend"
+  sidecar.istio.io/inject	: "true"
+
+ingress:
+  enabled: true
+  ingressClassName: nginx-vpn
+  hosts:
+    - host: bagel-gg-dev.bagel-data.com
+      paths:
+        - path: "/"
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: bagel-gg-dev.bagel-data.com
+    nginx.ingress.kubernetes.io/auth-response-headers: Authorization
+    nginx.ingress.kubernetes.io/auth-url: "https://oauth2-proxy-dev.bagel-data.com/oauth2/auth"
+    nginx.ingress.kubernetes.io/auth-signin: "https://oauth2-proxy-dev.bagel-data.com/oauth2/start?rd=https://$host"
+
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+env:
+  NEXTAUTH_URL: "https://bagel-gg-dev.bagel-data.com"

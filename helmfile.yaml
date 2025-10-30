@@ -1,18 +1,13 @@
-repositories:
-- name: superset
-  url: https://apache.github.io/superset
-
 environments:
   dev:
     kubeContext: data-core-eks-dev
-  staging:
-    kubeContext: data-core-eks-prod
   prod:
     kubeContext: data-core-eks-prod
 releases:
-  - name: superset-{{ .Environment.Name }}
-    namespace: superset
-    chart: superset/superset
-    version: 0.13.4
+  - name: data-portal-frontend-{{ .Environment.Name }}
+    namespace: default
+    chart: ./k8ss/data-portal-frontend
+    version: 0.1.0
     values:
-      - k8s/superset/values.{{ .Environment.Name }}.yaml.gotmpl
+      - k8s/data-portal-frontend/values-{{ .Environment.Name }}.yaml
+      - k8s/data-portal-frontend/values.yaml.gotmpl

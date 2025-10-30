@@ -1,0 +1,10 @@
+image:
+  tag: {{ env "IMAGE_TAG" | default "latest" }}
+
+secrets:
+  DATABRICKS_TOKEN: {{ requiredEnv "DATABRICKS_TOKEN" }}
+  DATABRICKS_HOST: bagelcode-data.cloud.databricks.com
+  DATABRICKS_PATH: /sql/1.0/warehouses/344a7b33f476c607 # `general-sql` Cluster
+  GOOGLE_CLIENT_ID: {{ requiredEnv "GOOGLE_CLIENT_ID" }}
+  GOOGLE_CLIENT_SECRET: {{ requiredEnv "GOOGLE_CLIENT_SECRET" }}
+  NEXTAUTH_SECRET: bagelcode1224
